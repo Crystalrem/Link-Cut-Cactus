@@ -43,59 +43,53 @@ namespace DataStructure
 				delta += delta;
 				message.make_add(delta, !ls && !rs);
 			}
-            void tag_rev(){
-                rev_flag = !rev_flag;
-                message.rev();
-            }
-            void tag_coverCir(Circle *circle){
-                cir_flag = true;
-                cir = circle;
-                message.coverCir(circle, !ls && !rs);
-            }
-            void tag_addWB(int delta0){
-                delta += delta0;
-                message.addWB(delta0, !ls && !rs);
-            }
-			void pushdown()
+            void pushdown()
 			{
                 if(rev_flag){
-                    swap(ls, rs);
-                    swap(pre, nex);
+                    std::swap(ls, rs);
+                    std::swap(pre, nex);
                     if(ls){
-                        ls->tag_rev();
+                        ls->make_rev();
                     }
                     if(rs){
-                        rs->tag_rev();
+                        rs->make_rev();
                     }
                     rev_flag = false;
                 }
                 if(cir_flag){
                     if(ls){
                         pre->cir = cir;
-                        lc->tag_coverCir(cir);
+                        lc->make_cir(cir);
                     }
                     if(rs){
                         pre->cir = cir;
-                        rs->tag_coverCir(cir);
+                        rs->make_cir(cir);
                     }
                     cir_flag = false;
                 }
                 if(delta != 0){
                     if(ls){
                         pre->w.wb += delta;
-                        ls->tag_addWB(delta);
+                        ls->make_add(delta);
                     }
                     if(rs){
                         pre->w.wb += delta;
-                        rs->tag_addWB(delta);
+                        rs->make_add(delta);
                     }
                     delta = 0;
                 }
 			}
 			void maintain()
 			{
-                
-				//TODO
+                message.Path_message.setEmpty();
+                message.first_edge = pre;
+                message.last_edge = nex;
+                message.cir_flag = false;
+                message.multi_flag = false;
+                if(ls)
+                    message = ls->message + message;
+                if(rs)
+                    message = message + rs->message;
 			}
 			void all_pushdown()
 			{
@@ -231,6 +225,10 @@ namespace DataStructure
 			{
 				mina = a, minb = b;
 			}
+            void setEmpty(){
+                mina = 0;
+                minb = INF;
+            }
 			Path_message merge(const Path_messgae &u, const Path_message &v)
 			{
 				return Path_message(u.minA + v.minA, min(u.minB, v.minB));
@@ -255,15 +253,33 @@ namespace DataStructure
 			}
 			void make_cir(Circle *cir, bool flag)
 			{
-				//TODO
+                cir_flag = !flag && cir != NULL;
+                multi_flag = false;
+                if(cir && first_edge->cir != cir && last_edge->cir != cir){
+                    if(cir->equal)
+                        multi_flag = true;
+                }
 			}
 			void make_add(T delta, bool flag)
 			{
-				//TODO
+				if(!flag)
+                    path_msg.minb += delta;
 			}
 			void merge(const Lcc_message &u, const Lcc_message &v)
 			{
-				//TODO
+                Lcc_message res;
+                assert(u.last_edge == v.first_edge);
+                Edge *e = u.last_edge;
+                res.path_msg = u.path_msg * Path_messgae(e->w) * v.path_msg;
+                res.multi_flag = u.multi_flag || v.multi_flag;
+                if(e->cir && u.first_edge->cir != e->cir && v.last_edge->cir != e->cir){
+                    if(e->cir->equal)
+                        res.multi_flag = true;
+                }
+                res.first_edge = u.first_edge;
+                res.last_edge = v.last_edge;
+                res.cir_flag = u.cir_flag || e->cir || v.cir_flag;
+                return res;
 			}
 		};
 		Node **node, **edge, **circle;
