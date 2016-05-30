@@ -229,11 +229,11 @@ namespace DataStructure
                 mina = 0;
                 minb = INF;
             }
-			Path_message merge(const Path_messgae &u, const Path_message &v)
+            friend inline path_message operator*(const Path_messgae &u, const Path_message &v)
 			{
 				return Path_message(u.minA + v.minA, min(u.minB, v.minB));
 			}
-			Path_message better(const Path_message &u, const Path_message &v)
+			friend inline path_message operator+(const Path_message &u, const Path_message &v)
 			{
 				if(u.mina < v.mina) return u;
 				else if(v.mina < u.mina) return v;
@@ -265,7 +265,7 @@ namespace DataStructure
 				if(!flag)
                     path_msg.minb += delta;
 			}
-			void merge(const Lcc_message &u, const Lcc_message &v)
+			friend inline lcc_message operator+(const Lcc_message &u, const Lcc_message &v)
 			{
                 Lcc_message res;
                 assert(u.last_edge == v.first_edge);
