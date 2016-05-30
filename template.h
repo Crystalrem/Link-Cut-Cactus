@@ -43,12 +43,58 @@ namespace DataStructure
 				delta += delta;
 				message.make_add(delta, !ls && !rs);
 			}
+            void tag_rev(){
+                rev_flag = !rev_flag;
+                message.rev();
+            }
+            void tag_coverCir(Circle *circle){
+                cir_flag = true;
+                cir = circle;
+                message.coverCir(circle, !ls && !rs);
+            }
+            void tag_addWB(int delta0){
+                delta += delta0;
+                message.addWB(delta0, !ls && !rs);
+            }
 			void pushdown()
 			{
-				//TODO
+                if(rev_flag){
+                    swap(ls, rs);
+                    swap(pre, nex);
+                    if(ls){
+                        ls->tag_rev();
+                    }
+                    if(rs){
+                        rs->tag_rev();
+                    }
+                    rev_flag = false;
+                }
+                if(cir_flag){
+                    if(ls){
+                        pre->cir = cir;
+                        lc->tag_coverCir(cir);
+                    }
+                    if(rs){
+                        pre->cir = cir;
+                        rs->tag_coverCir(cir);
+                    }
+                    cir_flag = false;
+                }
+                if(delta != 0){
+                    if(ls){
+                        pre->w.wb += delta;
+                        ls->tag_addWB(delta);
+                    }
+                    if(rs){
+                        pre->w.wb += delta;
+                        rs->tag_addWB(delta);
+                    }
+                    delta = 0;
+                }
 			}
 			void maintain()
 			{
+                
 				//TODO
 			}
 			void all_pushdown()
