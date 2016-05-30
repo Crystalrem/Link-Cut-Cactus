@@ -4,12 +4,18 @@
 #include <functional>
 #include <cstddef>
 #include <cassert>
+#include <vector>
 namespace DataStructure
 {
-	template<class T>
+	//template<class T>
 	class Link_cut_cactus
 	{
 	public:
+		class Node;
+		class Edge;
+		class Circle;
+		class Lcc_message;
+
 		class Node
 		{
 		public:
@@ -23,9 +29,10 @@ namespace DataStructure
 		
 			int delta;
 		
-			bool is_root(Node *x)
+			bool is_root()
 			{
-				return !(x -> par && (x -> par -> ls == x || x -> par -> rs == x));
+				return !(par && (par->ls == this || par->rs == this));
+				//return !(x -> par && (x -> par -> ls == x || x -> par -> rs == x));
 			}
 			void make_rev()
 			{
@@ -53,16 +60,28 @@ namespace DataStructure
 			}
 			void all_pushdown()
 			{
-				vector<Node*> tmp;
-				for (Node *i = this; !i -> is_root(); i = i -> fa)
+				std::vector<Node*> tmp;
+				for (Node *i = this; !i -> is_root(); i = i -> par)
 					tmp.push_back(i);
 				for (int i = tmp.size() - 1; i >= 0; i--)
 					tmp[i] -> pushdown();
 				tmp.clear();
 			}
-			void zig(Node *x)
+			void zig(/*Node *x*/)
 			{
-				Node *par = x -> par;
+				if (par->par){
+					if (par->par->ls == par) par->par->ls = this;
+					else if (par->par->rs == par) par->par->rs = this;
+				}
+				par = par->par;
+				par->par = this;
+				par->ls = rs;
+				if (rs) rs->par = par;
+				rs = par;
+
+				par->maintain();//
+				maintain();//
+				/*Node *par = x -> par;
 				if(par -> par)
 				{
 					if(par -> par -> ls == par) par -> par -> ls = x;
@@ -75,13 +94,26 @@ namespace DataStructure
 				if(x -> rs) x -> rs -> par = par;
 				x -> rs = par;
 			
-				maintain(par);//
-				maintain(x);//
+				par->maintain();//
+				x->maintain();//*/
 			}
 		
-			void zag(Node *x)
+			void zag(/*Node *x*/)
 			{
-				Node *par = x -> par;
+				if (par->par){
+					if (par->par->ls == par) par->par->ls = this;
+					else if (par->par->rs == par) par->par->rs = this;
+				}
+
+				par = par->par;
+				par->par = this;
+				par->rs = ls;
+				if (ls) ls->par = par;
+				ls = par;
+
+				par->maintain();//
+				maintain();//
+				/*Node *par = x -> par;
 				if(par -> par)
 				{
 					if(par -> par -> ls == par) par -> par -> ls = x;
@@ -94,8 +126,8 @@ namespace DataStructure
 				if(x -> ls) x -> ls -> par = par;
 				x -> ls = par;
 			
-				maintain(par);//
-				maintain(x);//
+				par->maintain();//
+				x->maintain();//*/
 			}
 		
 			void rotate()
@@ -109,7 +141,7 @@ namespace DataStructure
 				all_pushdown();
 				while(!is_root())
 				{
-					if(par -> is_root()) rotate(x);
+					if(par -> is_root()) rotate();
 					else
 					{
 						bool t1 = (par -> ls == this), t2 = (par -> par -> ls == par);
@@ -131,7 +163,7 @@ namespace DataStructure
 				Node *x = this;
 				while(x -> ls)
 				{
-					pushdown(x), x = x -> ls;
+					x->pushdown(), x = x -> ls;
 				}
 				x -> splay();
 				return x;
@@ -143,7 +175,8 @@ namespace DataStructure
 		};
 		class Weight
 		{
-			int wa; T wb;
+		public:
+			int wa; int/*T*/wb;
 			friend bool operator == (const Weight &u, const Weight &v)
 			{
 				return (u.wa == v.wa && u.wb == v.wb);
@@ -174,20 +207,20 @@ namespace DataStructure
 		{
 		public:
 			int mina;
-			T minb;
+			int/*T*/minb;
 			
 			Path_message() {}
 			Path_message(const Weight &w)
 			{
 				mina = w.wa, minb = w.wb;
 			}
-			Path_message(const int &a, const T &b)
+			Path_message(const int &a, const int/*T*/&b)
 			{
 				mina = a, minb = b;
 			}
-			Path_message merge(const Path_messgae &u, const Path_message &v)
+			Path_message merge(const Path_message &u, const Path_message &v)
 			{
-				return Path_message(u.minA + v.minA, min(u.minB, v.minB));
+				return Path_message(u.mina + v.mina, std::min(u.minb, v.minb));
 			}
 			Path_message better(const Path_message &u, const Path_message &v)
 			{
@@ -211,7 +244,7 @@ namespace DataStructure
 			{
 				//TODO
 			}
-			void make_add(T delta, bool flag)
+			void make_add(int/*T*/delta, bool flag)
 			{
 				//TODO
 			}
@@ -220,7 +253,9 @@ namespace DataStructure
 				//TODO
 			}
 		};
-		Node **node, **edge, **circle;
+		Node **node;
+		Edge **edge;
+		Circle **circle;
 		size_t node_size, edge_size, circle_size;
 		Link_cut_cactus() {} = default;
 		Link_cut_cactus(const int &n)
@@ -228,40 +263,129 @@ namespace DataStructure
 			node_size = n;
 			edge_size = 0;
 			circle_size = 0;
-			**node = new Node* [n + 10];
+			node = new Node* [n + 10];
 			for (int i = 0; i <= n; i++)
 				node[i] = new Node();
-			**edge = new Edge* [2 * n + 10];
-			**circle = new Circle* [2 * n + 10];
+			edge = new Edge* [2 * n + 10];
+			circle = new Circle* [2 * n + 10];
 		}
 		
-		~Link_cut_cactus
+		~Link_cut_cactus()
 		{
-			for (int i = 0; i <= node_sz; i++)
+			for (int i = 0; i <= node_size; i++)
 				if(node[i]) delete(node[i]);
 			delete  node;
-			for (int i = 0; i <= edge_sz; i++)
+			for (int i = 0; i <= edge_size; i++)
 				if(edge[i]) delete(edge[i]);
 			delete  edge;
-			for (int i = 0; i <= circle_sz; i++)
+			for (int i = 0; i <= circle_size; i++)
 				if(circle[i]) delete(circle[i]);
 			delete  circle;
 		}
 		bool link(int u, int v, int wa, int wb)
 		{
-			//TODO
+			if (u == v) return false;
+
+			Weight w;
+			w.wa = wa, w.wb = wb;
+			
+			Node *x = node[u], *y = node[v];
+			x->evert(), y->evert();
+			if (x->par){
+				x->access();
+				if (x->message.cir_flag)
+					return false;
+
+				Circle *cir = circle[++circle_size];
+				Edge *e = edge[++edge_size];
+				e->w = w, e->cir = cir;
+				cir->pa = y, cir->pb = x, cir->pex = NULL;
+				cir->miss = e;
+				x->make_cir(cir);
+
+				x->access();
+			}
+			else{
+				Edge *e = edge[++edge_size];
+				e->w = w; e->cir = NULL;
+				x->par = y; x->pre = e; x->maintain();
+			}
+			return true;
 		}
 		bool cut(int u, int v, int wa, int wb)
 		{
-			//TODO
+			if (u == v) return false;
+
+			Weight w;
+			w.wa = wa, w.wb = wb;
+
+			Node *x = node[u], *y = node[v];
+			if (x->get_root() != y->get_root())
+				return false;
+
+			y->evert(), x->access();
+			y->splay_until(x);
+
+			Circle *cir = x->pre->cir;
+			if (cir && cir->pa == y && !cir->pex && !cir->miss->w == w){
+				Edge *e = cir->miss;
+				x->make_cir(NULL);
+				return true;
+			}
+			if (!y->rs && x->pre->w == w){
+				Edge *e = x->pre;
+				if (cir){
+					if (cir->pex){
+						cir->pex->make_rev();
+
+						cir->pex->par = y, y->rs = cir->pex;
+						y->nex = cir->pex->message.first_edge;
+						x->pre = cir->pex->message.last_edge;
+					}
+					else{
+						y->nex = x->pre = cir->miss;
+					}
+
+					y->maintain(), x->maintain();
+					x->make_cir(NULL);
+				}
+				else{
+					y->par = NULL, y->nex = NULL, y->maintain();
+					x->ls = NULL, x->pre = NULL, x->maintain();
+				}
+				return true;
+			}
+			return false;
 		}
 		bool add(int u, int v, int delta)
 		{
-			//TODO
+			Node *x = node[u], *y = node[v];
+			if (x->get_root() != y->get_root())
+				return false;
+
+			x->evert(), y->access();
+			if (y->message.multi_flag)
+				return false;
+			y->make_add(delta);
+			return true;
 		}
-		pair<int, T> query(int u, int v)
+		std::pair<int, int/*T*/> query(int u, int v)
 		{
-			//TODO
+			std::pair<int, int/*T*/> ret;
+			Node *x = node[u], *y = node[v];
+			if (x->get_root() != y->get_root()){
+				ret.first = -1, ret.second = -1;
+				return ret;
+			}
+
+			x->evert(), y->access();
+			Path_message tmp = y->message.path_msg;
+			if (y->message.multi_flag){
+				tmp.minb = -1;
+			}
+			ret.first = tmp.mina;
+			ret.second = tmp.minb;
+			return ret;
 		}
 	};
 }
