@@ -359,9 +359,33 @@ namespace DataStructure
 		}
 		bool add(int u, int v, int delta)
 		{
+			Node *x = node[u], *y = node[v];
+			if (x->get_root() != y->get_root())
+				return false;
+
+			x->evert(), y->access();
+			if (y->message.multi_flag)
+				return false;
+			y->make_add(delta);
+			return true;
 		}
 		std::pair<int, int/*T*/> query(int u, int v)
 		{
+			std::pair<int, int/*T*/> ret;
+			Node *x = node[u], *y = node[v];
+			if (x->get_root() != y->get_root()){
+				ret.first = -1, ret.second = -1;
+				return ret;
+			}
+
+			x->evert(), y->access();
+			Path_message tmp = y->message.path_msg;
+			if (y->message.multi_flag){
+				tmp.minb = -1;
+			}
+			ret.first = tmp.mina;
+			ret.second = tmp.minb;
+			return ret;
 		}
 	};
 }
