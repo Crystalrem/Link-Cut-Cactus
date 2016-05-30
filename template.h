@@ -7,7 +7,7 @@
 #include <vector>
 namespace DataStructure
 {
-	template<class T>
+	//template<class T>
 	class Link_cut_cactus
 	{
 	public:
@@ -176,7 +176,7 @@ namespace DataStructure
 		class Weight
 		{
 		public:
-			int wa; T wb;
+			int wa; int/*T*/wb;
 			friend bool operator == (const Weight &u, const Weight &v)
 			{
 				return (u.wa == v.wa && u.wb == v.wb);
@@ -207,14 +207,14 @@ namespace DataStructure
 		{
 		public:
 			int mina;
-			T minb;
+			int/*T*/minb;
 			
 			Path_message() {}
 			Path_message(const Weight &w)
 			{
 				mina = w.wa, minb = w.wb;
 			}
-			Path_message(const int &a, const T &b)
+			Path_message(const int &a, const int/*T*/&b)
 			{
 				mina = a, minb = b;
 			}
@@ -244,7 +244,7 @@ namespace DataStructure
 			{
 				//TODO
 			}
-			void make_add(T delta, bool flag)
+			void make_add(int/*T*/delta, bool flag)
 			{
 				//TODO
 			}
@@ -284,19 +284,42 @@ namespace DataStructure
 		}
 		bool link(int u, int v, int wa, int wb)
 		{
-			//TODO
+			if (u == v) return false;
+
+			Weight w;
+			w.wa = wa, w.wb = wb;
+			
+			Node *x = node[u], *y = node[v];
+			x->evert(), y->evert();
+			if (x->par){
+				x->access();
+				if (x->message.cir_flag)
+					return false;
+
+				Circle *cir = circle[++circle_size];
+				Edge *e = edge[++edge_size];
+				e->w = w, e->cir = cir;
+				cir->pa = y, cir->pb = x, cir->pex = NULL;
+				cir->miss = e;
+				x->make_cir(cir);
+
+				x->access();
+			}
+			else{
+				Edge *e = edge[++edge_size];
+				e->w = w; e->cir = NULL;
+				x->par = y; x->pre = e; x->maintain();
+			}
+			return true;
 		}
 		bool cut(int u, int v, int wa, int wb)
 		{
-			//TODO
 		}
 		bool add(int u, int v, int delta)
 		{
-			//TODO
 		}
-		std::pair<int, T > query(int u, int v)
+		std::pair<int, int/*T*/> query(int u, int v)
 		{
-			//TODO
 		}
 	};
 }
