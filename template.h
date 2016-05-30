@@ -314,6 +314,48 @@ namespace DataStructure
 		}
 		bool cut(int u, int v, int wa, int wb)
 		{
+			if (u == v) return false;
+
+			Weight w;
+			w.wa = wa, w.wb = wb;
+
+			Node *x = node[u], *y = node[v];
+			if (x->get_root() != y->get_root())
+				return false;
+
+			y->evert(), x->access();
+			y->splay_until(x);
+
+			Circle *cir = x->pre->cir;
+			if (cir && cir->pa == y && !cir->pex && !cir->miss->w == w){
+				Edge *e = cir->miss;
+				x->make_cir(NULL);
+				return true;
+			}
+			if (!y->rs && x->pre->w == w){
+				Edge *e = x->pre;
+				if (cir){
+					if (cir->pex){
+						cir->pex->make_rev();
+
+						cir->pex->par = y, y->rs = cir->pex;
+						y->nex = cir->pex->message.first_edge;
+						x->pre = cir->pex->message.last_edge;
+					}
+					else{
+						y->nex = x->pre = cir->miss;
+					}
+
+					y->maintain(), x->maintain();
+					x->make_cir(NULL);
+				}
+				else{
+					y->par = NULL, y->nex = NULL, y->maintain();
+					x->ls = NULL, x->pre = NULL, x->maintain();
+				}
+				return true;
+			}
+			return false;
 		}
 		bool add(int u, int v, int delta)
 		{
