@@ -7,7 +7,7 @@
 #include <vector>
 namespace DataStructure
 {
-	//template<class T>
+	template<class T>
 	class Link_cut_cactus
 	{
 	public:
@@ -176,7 +176,7 @@ namespace DataStructure
 		class Weight
 		{
 		public:
-			int wa; int/*T*/wb;
+			int wa; Twb;
 			friend bool operator == (const Weight &u, const Weight &v)
 			{
 				return (u.wa == v.wa && u.wb == v.wb);
@@ -207,14 +207,14 @@ namespace DataStructure
 		{
 		public:
 			int mina;
-			int/*T*/minb;
+			Tminb;
 			
 			Path_message() {}
 			Path_message(const Weight &w)
 			{
 				mina = w.wa, minb = w.wb;
 			}
-			Path_message(const int &a, const int/*T*/&b)
+			Path_message(const int &a, const T&b)
 			{
 				mina = a, minb = b;
 			}
@@ -244,7 +244,7 @@ namespace DataStructure
 			{
 				//TODO
 			}
-			void make_add(int/*T*/delta, bool flag)
+			void make_add(Tdelta, bool flag)
 			{
 				//TODO
 			}
@@ -292,10 +292,13 @@ namespace DataStructure
 			Node *x = node[u], *y = node[v];
 			x->evert(), y->evert();
 			if (x->par){
+				//x and y are in the same cactus
 				x->access();
+				//if they're already in a circle: invalid
 				if (x->message.cir_flag)
 					return false;
 
+				//generate a circle
 				Circle *cir = circle[++circle_size];
 				Edge *e = edge[++edge_size];
 				e->w = w, e->cir = cir;
@@ -306,6 +309,7 @@ namespace DataStructure
 				x->access();
 			}
 			else{
+				//not connected: the same case as LCT.
 				Edge *e = edge[++edge_size];
 				e->w = w; e->cir = NULL;
 				x->par = y; x->pre = e; x->maintain();
@@ -327,15 +331,16 @@ namespace DataStructure
 			y->splay_until(x);
 
 			Circle *cir = x->pre->cir;
-			if (cir && cir->pa == y && !cir->pex && !cir->miss->w == w){
-				Edge *e = cir->miss;
+			if (cir && cir->pa == y && !cir->pex && cir->miss->w == w){
+				//x,y in the same circle, 'missing edge' case, and the missing edge is exactly the edge to delete:
 				x->make_cir(NULL);
 				return true;
 			}
+
 			if (!y->rs && x->pre->w == w){
-				Edge *e = x->pre;
 				if (cir){
 					if (cir->pex){
+						//the extra path should be added into current path.
 						cir->pex->make_rev();
 
 						cir->pex->par = y, y->rs = cir->pex;
@@ -343,6 +348,7 @@ namespace DataStructure
 						x->pre = cir->pex->message.last_edge;
 					}
 					else{
+						//simply delete it
 						y->nex = x->pre = cir->miss;
 					}
 
@@ -350,6 +356,7 @@ namespace DataStructure
 					x->make_cir(NULL);
 				}
 				else{
+					//no circle: LCT case.
 					y->par = NULL, y->nex = NULL, y->maintain();
 					x->ls = NULL, x->pre = NULL, x->maintain();
 				}
@@ -369,17 +376,24 @@ namespace DataStructure
 			y->make_add(delta);
 			return true;
 		}
-		std::pair<int, int/*T*/> query(int u, int v)
+		std::pair<int, T> query(int u, int v)
 		{
-			std::pair<int, int/*T*/> ret;
+			std::pair<int, T> ret;
+			//case v = u
+			if (u == v){
+				ret.first = 0, ret.second = 2147483647;
+				return ret;
+			}
+			//case unconnected
 			Node *x = node[u], *y = node[v];
 			if (x->get_root() != y->get_root()){
 				ret.first = -1, ret.second = -1;
 				return ret;
 			}
-
+			
 			x->evert(), y->access();
 			Path_message tmp = y->message.path_msg;
+			//special judge: case multiway.
 			if (y->message.multi_flag){
 				tmp.minb = -1;
 			}
