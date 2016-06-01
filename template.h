@@ -50,14 +50,55 @@ namespace DataStructure
 				delta += delta;
 				message.make_add(delta, !ls && !rs);
 			}
-			void pushdown()
-			{
-				//TODO
-			}
-			void maintain()
-			{
-				//TODO
-			}
+            void pushdown()
+            {
+                if(rev_flag){
+                    std::swap(ls, rs);
+                    std::swap(pre, nex);
+                    if(ls){
+                        ls->make_rev();
+                    }
+                    if(rs){
+                        rs->make_rev();
+                    }
+                    rev_flag = false;
+                }
+                if(cir_flag){
+                    if(ls){
+                        pre->cir = cir;
+                        lc->make_cir(cir);
+                    }
+                    if(rs){
+                        pre->cir = cir;
+                        rs->make_cir(cir);
+                    }
+                    cir_flag = false;
+                }
+                if(delta != 0){
+                    if(ls){
+                        pre->w.wb += delta;
+                        ls->make_add(delta);
+                    }
+                    if(rs){
+                        pre->w.wb += delta;
+                        rs->make_add(delta);
+                    }
+                    delta = 0;
+                }
+            }
+            void maintain()
+            {
+                message.Path_message.setEmpty();
+                message.first_edge = pre;
+                message.last_edge = nex;
+                message.cir_flag = false;
+                message.multi_flag = false;
+                if(ls)
+                    message = ls->message + message;
+                if(rs)
+                    message = message + rs->message;
+            }
+
 			void all_pushdown()
 			{
 				std::vector<Node*> tmp;
@@ -218,41 +259,61 @@ namespace DataStructure
 			{
 				mina = a, minb = b;
 			}
-			Path_message merge(const Path_message &u, const Path_message &v)
-			{
-				return Path_message(u.mina + v.mina, std::min(u.minb, v.minb));
-			}
-			Path_message better(const Path_message &u, const Path_message &v)
-			{
-				if(u.mina < v.mina) return u;
-				else if(v.mina < u.mina) return v;
-				else return Path_message(u.mina, -1);
-			}
-		};
+            void setEmpty(){
+                mina = 0;
+                minb = INF;
+            }
+            friend inline path_message operator*(const Path_messgae &u, const Path_message &v)
+            {
+                return Path_message(u.minA + v.minA, min(u.minB, v.minB));
+            }
+            friend inline path_message operator+(const Path_message &u, const Path_message &v)
+            {
+                if(u.mina < v.mina) return u;
+                else if(v.mina < u.mina) return v;
+                else return Path_message(u.mina, -1);
+            }
+        };
 		class Lcc_message
 		{
 		public:
 			Path_message path_msg;
 			Edge *first_edge, *last_edge;
 			bool cir_flag, multi_flag;
-			
-			void make_rev()
-			{
-				std::swap(first_edge, last_edge);
-			}
-			void make_cir(Circle *cir, bool flag)
-			{
-				//TODO
-			}
-			void make_add(Tdelta, bool flag)
-			{
-				//TODO
-			}
-			void merge(const Lcc_message &u, const Lcc_message &v)
-			{
-				//TODO
-			}
-		};
+            void make_rev()
+            {
+                std::swap(first_edge, last_edge);
+            }
+            void make_cir(Circle *cir, bool flag)
+            {
+                cir_flag = !flag && cir != NULL;
+                multi_flag = false;
+                if(cir && first_edge->cir != cir && last_edge->cir != cir){
+                    if(cir->equal)
+                        multi_flag = true;
+                }
+            }
+            void make_add(T delta, bool flag)
+            {
+                if(!flag)
+                    path_msg.minb += delta;
+            }
+            friend inline lcc_message operator+(const Lcc_message &u, const Lcc_message &v)
+            {
+                Lcc_message res;
+                assert(u.last_edge == v.first_edge);
+                Edge *e = u.last_edge;
+                res.path_msg = u.path_msg * Path_messgae(e->w) * v.path_msg;
+                res.multi_flag = u.multi_flag || v.multi_flag;
+                if(e->cir && u.first_edge->cir != e->cir && v.last_edge->cir != e->cir){
+                    if(e->cir->equal)
+                        res.multi_flag = true;
+                }
+                res.first_edge = u.first_edge;
+                res.last_edge = v.last_edge;
+                res.cir_flag = u.cir_flag || e->cir || v.cir_flag;
+                return res;
+            }		};
 		Node **node;
 		Edge **edge;
 		Circle **circle;
