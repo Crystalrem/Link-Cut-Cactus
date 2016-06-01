@@ -193,11 +193,128 @@ namespace DataStructure
 				
 				}
 			}
-	
-			void access()
-			{
-				//TODO?
-			}
+            
+            
+            void splay_until(Node *x) {
+                all_pushdown();
+                while(this -> par != x)
+                {
+                    if(par -> is_root()) rotate(x);
+                    else
+                    {
+                        bool t1 = (par -> ls == this), t2 = (par -> par -> ls == par);
+                        if(t1 == t2) par -> rotate();
+                        else rotate();
+                        rotate();
+                    }
+                    
+                }
+            }
+            
+            int get_disL() {
+                if(!pre) {
+                    return 0;
+                }
+                int ans = pre -> w.wa;
+                if(ls) {
+                    ans += ls -> massage.path_msg.mina + massage.first_edge -> w.wa;
+                }
+                return ans;
+            }
+            
+            int get_disR() {
+                if(!nex) {
+                    return 0;
+                }
+                int ans = pre -> w.wa;
+                if(rs) {
+                    ans += rs -> massage.path_msg.mina + massage.first_edge -> w.wa;
+                }
+                return ans;
+            }
+            
+            void access() {
+                Node *x = this;
+                Node *now = x, father = nullptr;
+                bool checkflag;
+                for(; now; father = now, now = now -> par) {
+                    now -> splay();
+                    if(now -> pre && now -> pre -> cir) {
+                        checkflag = false;
+                        cir = now -> pre -> cir;
+                        if(cir -> pex && !cir -> pex -> isRoot()) {
+                            cir -> pex = now;
+                        }
+                        cir -> pb -> splay();
+                        cir -> pa -> splay();
+                        if(cir -> pb -> isRoot()) {
+                            if(cir -> pb -> par != cir -> pa) {
+                                swap(cir -> pa, cir -> pb);
+                                if(cir -> pex) {
+                                    cir -> pex -> make_rev();
+                                }
+                            }
+                        } else {
+                            checkflag = true;
+                            cir -> pb -> splay_until(cir -> pa);
+                            if(cir -> pa -> ls == cir -> pb) {
+                                cir -> pb -> rotate();
+                                swap(cir -> pa, cir -> pb);
+                                if(cir -> pex) {
+                                    cir -> pex -> make_rev();
+                                }
+                            }
+                            cir -> pa -> rs = nullptr;
+                            cir -> pa -> nex = nullptr;
+                        }
+                        cir -> pb -> rs = cir -> pex;
+                        if(cir -> pex) {
+                            cir -> pb -> nex = cir -> pex -> massage.first_edge;
+                        } else {
+                            cir -> pb -> nex = cir -> miss;
+                        }
+                        if(cir -> pex) {
+                            cir -> pex -> par = cir -> pb;
+                        }
+                        now -> splay();
+                        if(now -> get_disL() > now -> get_disR()) {
+                            now -> make_rev();
+                            now -> push_down();
+                        }
+                        cir -> pb = now;
+                        cir -> pex = now -> rs;
+                        if(now -> rs) {
+                            cir -> miss = nullptr;
+                        } else {
+                            cir -> miss = now -> nex;
+                        }
+                        if(cir -> pex) {
+                            cir -> pex -> par = nullptr;
+                        }
+                        now -> rs = father;
+                        if(father) {
+                            now -> nex = father -> message.first_edge;
+                        } else {
+                            now -> nex = nullptr;
+                        }
+                        now -> maintain();
+                        if(checkflag) {
+                            cir -> pa -> rs = now;
+                            cir -> pa -> nex = now -> message.first_edge;
+                            now -> splay();
+                        }
+                    } else {
+                        now -> rs = father;
+                        if(father) {
+                            now -> nex = father -> message.first_edge;
+                        } else {
+                            now -> nex = nullptr;
+                        }
+                        now -> maintain();
+                    }
+                }
+                //TODO?
+            }
 			Node *get_root()
 			{
 				access();
